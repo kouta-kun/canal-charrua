@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0"/>
+    <title>Betum Hué - Canal Charrúa</title>
+</head>
+<body>
+<h1 class="center text-center">Betum Hué | Canal Charrúa</h1>
+<hr class="half-width center"/>
+<p class="center text-center">
+    Las historias y la información publicadas aquí
+    son obras artísticas de ficción y falsedad.
+    Solo un idiota tomaría cualquier cosa publicada aquí como un
+    hecho.
+</p>
+<button class="replybutton center" id="new-thread">Crear hilo</button>
+<hr/>
+
+<dialog id="reply-dialog">
+    <form method="dialog">
+        <button>x</button>
+        <p class="small text-center">Responder</p>
+        <hr class="half-width"/>
+        <table>
+            <tr>
+                <td><label for="subject"
+                           id="subject-label">Asunto</label></td>
+                <td><input id="subject"></td>
+            </tr>
+            <tr>
+                <td><label for="content"
+                           id="content-label">Texto</label></td>
+                <td><textarea id="content"></textarea></td>
+            </tr>
+            <tr>
+                <td><label for="file">Archivo (imagen JPG, BMP,
+                    PNG)</label></td>
+                <td><input type="file" id="file"
+                           accept="image/jpeg,image/png,image/bmp,image/gif">
+                </td>
+            </tr>
+        </table>
+        <button id="sendmsgbtn" type="button">Enviar</button>
+    </form>
+</dialog>
+
+<div id="threads">
+
+</div>
+
+<template id="template:thread">
+    <div class="subjectbar-thread"></div>
+    <div class="infobar-thread">
+        Fulanito (ID: <span class="posterid"></span>) — <span
+            class="datetime"></span>
+        <button class="replybutton">Responder</button>
+    </div>
+    <div class="clearfix">
+        <img alt="" src="" class="image"/>
+        <div class="floatleft">
+            <div class="content"></div>
+            <hr class="half-width"/>
+            <div class="children"></div>
+        </div>
+    </div>
+    <hr/>
+</template>
+
+<template id="template:message">
+    <div class="half-width message">
+        <div class="subjectbar">
+        </div>
+        <div class="infobar">
+            Fulanito (ID: <span class="posterid"></span>) — <span
+                class="datetime"></span>
+            <button class="replybutton">Responder</button>
+        </div>
+    <div class="clearfix">
+        <img alt="" src="" class="image"/>
+        <div class="floatleft">
+            <div class="content"></div>
+        </div>
+    </div>
+    </div>
+</template>
+<script type="module" src="/src/main.ts"></script>
+<hr class="half-width"/>
+<p class="text-center">
+Ⓒ kouta5428 c. 2025 | RIP 4chan
+</p>
+</body>
+</html>

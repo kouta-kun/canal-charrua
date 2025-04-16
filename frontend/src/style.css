@@ -1,0 +1,88 @@
+:root {
+    background-color: powderblue;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.half-width {
+    display: block;
+    min-width: 50%;
+    width: fit-content;
+    word-break: auto-phrase;
+}
+
+.center {
+    margin-left: auto;
+    margin-right: auto;
+    display:block;
+}
+
+.message {
+    border: 1px solid darkgray;
+    margin-left: 0.5em;
+    background-color: lightsteelblue;
+    padding: 0.5em;
+}
+
+.infobar {
+    font-size: small;
+    text-align: right;
+    margin-bottom: 2em;
+}
+.infobar-thread {
+    font-size: small;
+    text-align: center;
+    margin-bottom: 2em;
+}
+
+.subjectbar {
+    text-align: right;
+    font-weight: bolder;
+}
+
+.subjectbar-thread {
+    text-align: center;
+    font-weight: bolder;
+}
+
+.replybutton {
+    background: none;
+    border: none;
+    color: darkblue;
+}
+.replybutton:hover {
+    cursor: pointer;
+}
+
+.small {
+    font-size: small;
+}
+
+dialog {
+    position: sticky;
+    top: 20px;
+}
+
+.floatleft {
+    float: left;
+    margin-left: 0.5em;
+}
+
+.image {
+    max-width: 25vw;
+    max-height: 50vh;
+    object-fit: cover;
+    float:left;
+    display: block;
+}
+.clearfix::after {
+    content: "";
+    clear: both;
+    display: table;
+}
+
+.greentext {
+    color: darkgreen;
+}

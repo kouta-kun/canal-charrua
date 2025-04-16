@@ -1,0 +1,6 @@
+.venv
+files
+charrua.db
+.idea
+*.tar
+**/*.tar
