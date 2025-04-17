@@ -8,6 +8,7 @@
 </head>
 <body>
 <h1 class="center text-center">Betum Hué | Canal Charrúa</h1>
+<img src="flag.svg" class="flag center">
 <hr class="half-width center"/>
 <p class="center text-center">
     Las historias y la información publicadas aquí
@@ -15,6 +16,8 @@
     Solo un idiota tomaría cualquier cosa publicada aquí como un
     hecho.
 </p>
+<div id="pagesel"></div>
+<hr/>
 <button class="replybutton center" id="new-thread">Crear hilo</button>
 <hr/>
 
@@ -53,7 +56,7 @@
 <template id="template:thread">
     <div class="subjectbar-thread"></div>
     <div class="infobar-thread">
-        Fulanito (ID: <span class="posterid"></span>) — <span
+        Fulanito <span class="country"></span> (ID: <span class="posterid"></span>) — <span
             class="datetime"></span>
         <button class="replybutton">Responder</button>
     </div>
@@ -73,7 +76,7 @@
         <div class="subjectbar">
         </div>
         <div class="infobar">
-            Fulanito (ID: <span class="posterid"></span>) — <span
+            Fulanito <span class="country"></span> (ID: <span class="posterid"></span>) — <span
                 class="datetime"></span>
             <button class="replybutton">Responder</button>
         </div>

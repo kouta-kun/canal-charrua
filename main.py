@@ -1,19 +1,14 @@
-import asyncio
-import mimetypes
 import os
-import random
 import typing
 import uuid
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from google import genai
-
 import magic
 import pydantic
 from fastapi import FastAPI, Request, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.responses import StreamingResponse, FileResponse
+from fastapi.responses import FileResponse
 
 import challenge
 from db import database
@@ -94,6 +89,8 @@ async def create_post(body: CreatePost, request: Request):
 
 
 async def make_post(body, request):
+    if len(body.content) == 0 and body.image_id is None:
+        raise ValueError('No posts vacíos!!!')
     response = await database.create_post(body.subject, body.content,
                                        body.parent, body.image_id,
                                        request.client.host)
@@ -101,8 +98,12 @@ async def make_post(body, request):
 
 
 @app.get('/api/threads')
-async def thread_list():
-    return [t async for t in database.get_threads_frontpage()]
+async def thread_list(page: typing.Optional[int] = 0):
+    return [t async for t in database.get_threads_frontpage(page)]
+
+@app.get('/api/pagecount')
+async def page_count():
+    return {'count': await database.page_count()}
 
 
 app.add_middleware(CORSMiddleware, allow_origins=['*'],

@@ -1,11 +1,14 @@
 import asyncio
 import base64
 import hashlib
-import itertools
+import math
 import time
 import typing
 
 import aiosqlite
+import maxminddb
+
+reader = maxminddb.open_database('geoacumen.mmdb')
 
 
 def get_poster_id(poster_ip, thread_id):
@@ -15,6 +18,13 @@ def get_poster_id(poster_ip, thread_id):
     hd = hasher.hexdigest()
     poster_id = base64.b64encode(hd[-6:].encode('utf-8'), b'!?')
     return poster_id
+
+
+def get_country(poster_ip):
+    country = reader.get(poster_ip).get('country', {}).get('iso_code', 'Desconocido')
+    if country == 'None':
+        country = 'Desconocido'
+    return country
 
 
 class DB:
@@ -59,7 +69,7 @@ class DB:
             )
             await db.commit()
 
-    async def get_threads_frontpage(self):
+    async def get_threads_frontpage(self, page: int):
         async with self as db:
             cursor: aiosqlite.Cursor = await db.cursor()
             await cursor.execute('''
@@ -74,8 +84,8 @@ class DB:
             from post p1
             where p1.parent is null
             order by last_post_date desc
-            limit 10
-            ''')
+            limit 10 offset ?
+            ''', (page * 10,))
             for thread in list(await cursor.fetchall()):
                 thread_id = thread[0]
                 await cursor.execute('''
@@ -92,6 +102,7 @@ class DB:
                     'content': thread[2],
                     'submission_date': thread[3],
                     'poster_id': get_poster_id(poster_ip, thread_id),
+                    'country': get_country(poster_ip),
                     'image_id': thread[6],
                     'children': [
                         {
@@ -100,6 +111,7 @@ class DB:
                             'content': msg[2],
                             'submission_date': msg[3],
                             'poster_id': get_poster_id(msg[4], thread_id),
+                            'country': get_country(msg[4]),
                             'image_id': msg[5],
                         }
                         for msg in messages
@@ -155,4 +167,13 @@ class DB:
             update challenge set used = true where id = ?
             ''', (challenge_id,))
             await db.commit()
+
+    async def page_count(self):
+        async with self as db:
+            cursor = await db.cursor()
+            await cursor.execute('''
+            select count(*) / 10.0 as pagecount from post where parent is null;
+            ''')
+            return min(int(math.ceil((await cursor.fetchone())[0])), 10)
+
 database = DB()

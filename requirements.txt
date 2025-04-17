@@ -4,4 +4,4 @@ Jinja2
 python-multipart
 python-magic
 uvicorn
-google-genai
+maxminddb

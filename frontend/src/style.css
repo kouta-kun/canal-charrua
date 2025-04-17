@@ -19,11 +19,16 @@
     display:block;
 }
 
+.flag {
+    max-width: 25vw;
+}
+
 .message {
     border: 1px solid darkgray;
     margin-left: 0.5em;
     background-color: lightsteelblue;
     padding: 0.5em;
+    margin-bottom: 0.2em;
 }
 
 .infobar {

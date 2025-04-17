@@ -1,5 +1,7 @@
 import './style.css'
 import {sha256} from 'js-sha256';
+import {flag} from 'country-emoji';
+let userIp: string = "";
 
 type Message = {
     id: number;
@@ -8,7 +10,7 @@ type Message = {
     submission_date: number;
     poster_id: string;
     image_id: string | null;
-    bot_acc: string | null;
+    country: string;
 };
 
 type Thread = Message & {
@@ -42,16 +44,29 @@ function processDate(submissionDate: number) {
     return new Date(submissionDate).toLocaleString();
 }
 
+function calculateId(parent_id: number) {
+    const hash = sha256.create();
+    hash.update(userIp);
+    hash.update(parent_id+"");
+    const hd = hash.hex();
+    return btoa(hd.slice(hd.length-6));
+}
+
+const yourMessages: number[] = [];
+
 function create_message(message: Message, child_of: HTMLDivElement, parent_id: number) {
     const clone = (document.getElementById("template:message") as HTMLTemplateElement).content.cloneNode(true) as HTMLElement;
     (clone.querySelector<HTMLSpanElement>(".datetime"))!.innerText = processDate(message.submission_date);
+    const posterId = (clone.querySelector<HTMLDivElement>(".posterid"))!;
+    posterId.innerText = message.poster_id;
+    const yourId = calculateId(parent_id);
+    if (message.poster_id === yourId) {
+        posterId.innerText += " (Vos)";
+        yourMessages.push(message.id);
+    }
+    (clone.querySelector<HTMLSpanElement>(".country"))!.innerText = flag(message.country) ?? "?";
     const contentDiv = (clone.querySelector<HTMLDivElement>(".content"))!;
     processMessageContent(contentDiv, message);
-    const posterId = (clone.querySelector<HTMLDivElement>(".posterid"))!;
-    if (message.bot_acc !== null) {
-        posterId.innerText = "Bot("+message.bot_acc+")"
-    } else
-        posterId.innerText = message.poster_id;
     const subjectBar = (clone.querySelector<HTMLDivElement>(".subjectbar"))!;
     subjectBar.innerText = (message.subject ?? "") + " #"+message.id;
     subjectBar.id = message.id+"";
@@ -63,7 +78,8 @@ function create_message(message: Message, child_of: HTMLDivElement, parent_id: n
 }
 
 
-const APIPath = "http://localhost:8000";
+const APIPath = "https://koutarou.uy/betumhue";
+// const APIPath = "http://localhost:8000";
 
 async function setup_message_send(parent_id: number | null, starting_text: string | null) {
     const dialog = document.getElementById("reply-dialog") as HTMLDialogElement;
@@ -98,6 +114,9 @@ function processMessageContent(contentDiv: HTMLDivElement, message: Message) {
             const link = document.createElement("a");
             link.href = "#" + refmatch.slice(2);
             link.innerText = refmatch;
+            if (yourMessages.includes(+refmatch.slice(2))) {
+                link.innerText += " (Vos)"
+            }
             contentDiv.append(link);
         } else if (greentextmatch !== undefined) {
             const span = document.createElement("span");
@@ -117,13 +136,20 @@ function processMessageContent(contentDiv: HTMLDivElement, message: Message) {
 function create_thread(thread: Thread, child_of: HTMLDivElement) {
     const clone = (document.getElementById("template:thread") as HTMLTemplateElement).content.cloneNode(true) as HTMLElement;
     (clone.querySelector<HTMLSpanElement>(".datetime"))!.innerText = processDate(thread.submission_date);
+    const posterId = (clone.querySelector<HTMLDivElement>(".posterid"))!;
+    posterId.innerText = thread.poster_id;
+    const yourId = calculateId(thread.id);
+    if (thread.poster_id === yourId) {
+        posterId.innerText += " (Vos)";
+        yourMessages.push(thread.id);
+    }
     const contentDiv = (clone.querySelector<HTMLDivElement>(".content"))!;
     processMessageContent(contentDiv, thread);
     const subjectBar = (clone.querySelector<HTMLDivElement>(".subjectbar-thread"))!;
     subjectBar.innerText = (thread.subject ?? "") + " #"+thread.id;
     subjectBar.id = thread.id+"";
+    (clone.querySelector<HTMLSpanElement>(".country"))!.innerText = flag(thread.country) ?? "?";
     (clone.querySelector<HTMLButtonElement>(".replybutton"))!.addEventListener("click", setup_message_send.bind(null, thread.id, ">>"+thread.id+"\n"));
-    (clone.querySelector<HTMLDivElement>(".posterid"))!.innerText = thread.poster_id;
     if (thread.image_id !== null) {
         clone.querySelector<HTMLImageElement>(".image")!.src = APIPath + "/api/image/"+thread.image_id;
     }
@@ -170,6 +196,55 @@ async function sendMessage() {
 
 (document.getElementById("new-thread") as HTMLDialogElement).addEventListener("click", setup_message_send.bind(null, null, null));
 
-fetch(APIPath + "/api/threads").then(r => r.json()).then(r => r as Thread[]).then(r => {
-    r.forEach(t => create_thread(t, document.getElementById("threads") as HTMLDivElement))
-})
+async function getIp() {
+    let ipstore: string | null;
+    if ((ipstore = window.localStorage.getItem('myip')) !== null) {
+        const [ip, time] = JSON.parse(ipstore);
+        if ((Date.now() - time) < 1000 * 60 * 30) {
+            userIp = ip;
+            return;
+        }
+    }
+    try {
+        await fetch('https://api.ipify.org?format=json').then(r => r.json()).then(({ip}) => {
+            userIp = ip;
+            window.localStorage.setItem('myip', JSON.stringify([ip, Date.now()]));
+        }).catch(() => userIp = "");
+    } catch (e) {
+    }
+}
+
+const threadElements = document.getElementById("threads") as HTMLDivElement;
+
+async function loadPage(page: number) {
+    await fetch(APIPath + "/api/threads?page=" + page).then(r => r.json()).then(r => r as Thread[]).then(r => {
+        threadElements.replaceChildren();
+        r.forEach(t => create_thread(t, threadElements))
+    });
+}
+
+async function loadPageCount() {
+    const response = await fetch(APIPath + "/api/pagecount");
+    const {count} = (await response.json()) as {count: number};
+    const pagesel = document.getElementById("pagesel") as HTMLDivElement;
+    pagesel.append('[')
+    for(let i = 0; i < count; i++) {
+        const btn = document.createElement("button");
+        btn.className = "replybutton";
+        btn.innerText = (i+1)+"";
+        btn.addEventListener('click', loadPage.bind(null, i));
+        pagesel.append(btn);
+        if (i !== count - 1) {
+            pagesel.append("/");
+        }
+    }
+    pagesel.append(']')
+}
+
+async function init() {
+    await getIp();
+    await loadPage(0);
+    await loadPageCount();
+}
+
+init();
