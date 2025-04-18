@@ -3,6 +3,13 @@ import {sha256} from 'js-sha256';
 import {flag} from 'country-emoji';
 let userIp: string = "";
 
+function flagEmoji(country_code: string) {
+    if(country_code.includes("STAR")) {
+        return '🛰️';
+    }
+    return flag(country_code);
+}
+
 type Message = {
     id: number;
     subject: string | null;
@@ -65,7 +72,7 @@ function create_message(message: Message, child_of: HTMLDivElement, parent_id: n
         posterId.innerText += " (Vos)";
         yourMessages.push(message.id);
     }
-    (clone.querySelector<HTMLSpanElement>(".country"))!.innerText = flag(message.country) ?? "?";
+    (clone.querySelector<HTMLSpanElement>(".country"))!.innerText = flagEmoji(message.country) ?? "?";
     const contentDiv = (clone.querySelector<HTMLDivElement>(".content"))!;
     processMessageContent(contentDiv, message);
     const parentDiv = clone.querySelector<HTMLDivElement>('.message')!;
@@ -79,7 +86,7 @@ function create_message(message: Message, child_of: HTMLDivElement, parent_id: n
     child_of.appendChild(clone);
 }
 
-const isLocalDevelopment = window.location.host.includes('localhost') || window.location.host.includes('127.0.0.1');
+const isLocalDevelopment = false; // window.location.host.includes('localhost') || window.location.host.includes('127.0.0.1');
 const APIPath = isLocalDevelopment ? "http://localhost:8000" : "https://koutarou.uy/betumhue";
 
 async function refreshChallenge() {
@@ -191,7 +198,7 @@ function create_thread(thread: Thread, child_of: HTMLDivElement) {
     }
     const parentDiv = clone.querySelector<HTMLDivElement>('.thread')!;
     parentDiv.id = thread.id+"";
-    (clone.querySelector<HTMLSpanElement>(".country"))!.innerText = flag(thread.country) ?? "?";
+    (clone.querySelector<HTMLSpanElement>(".country"))!.innerText = flagEmoji(thread.country) ?? "?";
     (clone.querySelector<HTMLButtonElement>(".replybutton"))!.addEventListener("click", setup_message_send.bind(null, thread.id, ">>"+thread.id+"\n"));
     if (thread.image_id !== null) {
         clone.querySelector<HTMLImageElement>(".image")!.src = APIPath + "/api/image/"+thread.image_id;
