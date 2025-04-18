@@ -91,3 +91,9 @@ dialog {
 .greentext {
     color: darkgreen;
 }
+
+.error {
+    color: red;
+    font-weight: bolder;
+    font-size: large;
+}

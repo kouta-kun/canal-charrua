@@ -77,9 +77,12 @@ function create_message(message: Message, child_of: HTMLDivElement, parent_id: n
     child_of.appendChild(clone);
 }
 
+const isLocalDevelopment = window.location.host.includes('localhost') || window.location.host.includes('127.0.0.1');
+const APIPath = isLocalDevelopment ? "http://localhost:8000" : "https://koutarou.uy/betumhue";
 
-const APIPath = "https://koutarou.uy/betumhue";
-// const APIPath = "http://localhost:8000";
+async function refreshChallenge() {
+    challenge_to_send = await fetch(APIPath + "/api/challenge").then(r => r.json()) as Challenge;
+}
 
 async function setup_message_send(parent_id: number | null, starting_text: string | null) {
     const dialog = document.getElementById("reply-dialog") as HTMLDialogElement;
@@ -91,7 +94,7 @@ async function setup_message_send(parent_id: number | null, starting_text: strin
     if (starting_text !== null) {
         (document.getElementById("content") as HTMLTextAreaElement).value = starting_text;
     }
-    challenge_to_send = await fetch(APIPath + "/api/challenge").then(r => r.json()) as Challenge;
+    await refreshChallenge();
     dialog.show();
 }
 
@@ -183,13 +186,22 @@ async function sendMessage() {
     message_to_send.image_id = imageId;
     (document.getElementById("subject") as HTMLInputElement).value="";
     (document.getElementById("content") as HTMLTextAreaElement).value="";
-    fetch(APIPath + "/api/post", {
+    const response = await fetch(APIPath + "/api/post", {
         body: JSON.stringify(message_to_send),
         headers: {
             'Content-Type': 'application/json'
         },
         method: 'POST'
-    }).then(r => r.json()).then(() => window.document.location.reload());
+    });
+    const json = await response.json();
+    if (response.status >= 300) {
+        const {detail} = json as {detail: string};
+        document.querySelector<HTMLParagraphElement>(".error")!.innerText = detail;
+        await refreshChallenge(); // probablemente invalidado antes del error. solicitar nuevo.
+    } else {
+        window.scrollTo(0, 0);
+        window.document.location.reload();
+    }
 }
 
 (document.getElementById("sendmsgbtn") as HTMLDialogElement).addEventListener("click", sendMessage);
@@ -226,19 +238,21 @@ async function loadPage(page: number) {
 async function loadPageCount() {
     const response = await fetch(APIPath + "/api/pagecount");
     const {count} = (await response.json()) as {count: number};
-    const pagesel = document.getElementById("pagesel") as HTMLDivElement;
-    pagesel.append('[')
-    for(let i = 0; i < count; i++) {
-        const btn = document.createElement("button");
-        btn.className = "replybutton";
-        btn.innerText = (i+1)+"";
-        btn.addEventListener('click', loadPage.bind(null, i));
-        pagesel.append(btn);
-        if (i !== count - 1) {
-            pagesel.append("/");
+    const pageselCollection = document.getElementsByClassName("pagesel") as HTMLCollectionOf<HTMLDivElement>;
+    for (const pagesel of pageselCollection) {
+        pagesel.append('[')
+        for(let i = 0; i < count; i++) {
+            const btn = document.createElement("button");
+            btn.className = "replybutton";
+            btn.innerText = (i+1)+"";
+            btn.addEventListener('click', loadPage.bind(null, i));
+            pagesel.append(btn);
+            if (i !== count - 1) {
+                pagesel.append("/");
+            }
         }
+        pagesel.append(']')
     }
-    pagesel.append(']')
 }
 
 async function init() {

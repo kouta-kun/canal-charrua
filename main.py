@@ -6,7 +6,7 @@ from typing import Annotated
 
 import magic
 import pydantic
-from fastapi import FastAPI, Request, File, UploadFile
+from fastapi import FastAPI, Request, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
@@ -45,7 +45,7 @@ class CreatePost(pydantic.BaseModel):
 @app.get('/api/image/{img_id}')
 async def get_image(img_id: str):
     if not os.path.exists(os.path.join('files',img_id)) or '/' in img_id or '..' in img_id:
-        raise ValueError("image not found")
+        raise HTTPException(detail="Imagen no encontrada", status_code=404)
 
     with open(os.path.join('files',img_id+'.mime'), 'r') as f:
         mimetype = f.read().strip()
@@ -57,7 +57,7 @@ async def get_image(img_id: str):
 @app.post("/api/file-upload")
 async def upload_file(file: Annotated[UploadFile, File()]):
     if file.size > 1024 * 1024 * 32:
-        raise ValueError("File too big.")
+        raise HTTPException(detail="Archivo demasiado grande!", status_code=413)
 
     filecontent = file.file.read()
     realmimetype = magic.from_buffer(filecontent, mime=True)
@@ -66,7 +66,7 @@ async def upload_file(file: Annotated[UploadFile, File()]):
             'image/png', 'image/bmp',
             'image/jpeg', 'image/gif'
     ):
-        raise ValueError("Only images allowed.")
+        raise HTTPException(detail="Sólo puedes subir imágenes!", status_code=415)
 
     os.makedirs('files', exist_ok=True)
     imguuid = str(uuid.uuid1())
@@ -82,7 +82,10 @@ async def upload_file(file: Annotated[UploadFile, File()]):
 
 @app.post('/api/post')
 async def create_post(body: CreatePost, request: Request):
-    await challenge.validate(body.challenge_id, body.challenge_result)
+    try:
+        await challenge.validate(body.challenge_id, body.challenge_result)
+    except:
+        raise HTTPException(detail='El desafío fue incorrecto o ya fue utilizado; recarga la página.', status_code=401)
     return {
         'id': await make_post(body, request)
     }
@@ -90,7 +93,7 @@ async def create_post(body: CreatePost, request: Request):
 
 async def make_post(body, request):
     if len(body.content) == 0 and body.image_id is None:
-        raise ValueError('No posts vacíos!!!')
+        raise HTTPException(detail='No posts vacíos!', status_code=422)
     response = await database.create_post(body.subject, body.content,
                                        body.parent, body.image_id,
                                        request.client.host)
