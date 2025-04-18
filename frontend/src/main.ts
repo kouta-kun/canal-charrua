@@ -15,6 +15,7 @@ type Message = {
 
 type Thread = Message & {
     children: Message[];
+    sticky: boolean;
 };
 
 type SentMessage = Pick<Message, "content" | "subject" | "image_id"> & {
@@ -67,9 +68,10 @@ function create_message(message: Message, child_of: HTMLDivElement, parent_id: n
     (clone.querySelector<HTMLSpanElement>(".country"))!.innerText = flag(message.country) ?? "?";
     const contentDiv = (clone.querySelector<HTMLDivElement>(".content"))!;
     processMessageContent(contentDiv, message);
+    const parentDiv = clone.querySelector<HTMLDivElement>('.message')!;
+    parentDiv.id = message.id+"";
     const subjectBar = (clone.querySelector<HTMLDivElement>(".subjectbar"))!;
     subjectBar.innerText = (message.subject ?? "") + " #"+message.id;
-    subjectBar.id = message.id+"";
     (clone.querySelector<HTMLButtonElement>(".replybutton"))!.addEventListener("click", setup_message_send.bind(null, parent_id, ">>"+message.id+"\n"));
     if (message.image_id !== null) {
         clone.querySelector<HTMLImageElement>(".image")!.src = APIPath + "/api/image/"+message.image_id;
@@ -115,12 +117,14 @@ function processMessageContent(contentDiv: HTMLDivElement, message: Message) {
             contentDiv.append(link);
         } else if (refmatch !== undefined) {
             const link = document.createElement("a");
-            link.href = "#" + refmatch.slice(2);
+            const refId = Number.parseInt(refmatch.slice(2));
+            link.href = "#" + refId;
             link.innerText = refmatch;
-            if (yourMessages.includes(+refmatch.slice(2))) {
+            if (yourMessages.includes(+refId)) {
                 link.innerText += " (Vos)"
             }
             contentDiv.append(link);
+            add_reply(refId, message.id);
         } else if (greentextmatch !== undefined) {
             const span = document.createElement("span");
             span.innerText = greentextmatch;
@@ -134,6 +138,38 @@ function processMessageContent(contentDiv: HTMLDivElement, message: Message) {
     if (content.length > 0) {
         contentDiv.append(content);
     }
+}
+
+const replies: [number, number][] = [];
+
+function add_reply(to: number, message_id: number) {
+    replies.push([to, message_id]);
+}
+
+function process_reply(to: number, message_id: number) {
+    const replyList = document.getElementById(""+to)?.querySelector<HTMLDivElement>(".replylist");
+    if (replyList === null || replyList === undefined) throw new Error("couldn't find replylist element");
+    if (!replyList.hasChildNodes()) {
+        const resp = document.createElement("span");
+        resp.innerText = "Respuestas: "
+        replyList.append(document.createElement("br"), resp);
+    }
+
+    const link = document.createElement("a");
+    link.href = "#" + message_id;
+    link.innerText = ">>"+message_id;
+
+    replyList.append(link);
+    const skip = document.createElement("span");
+    skip.innerText = " ";
+    replyList.append(skip);
+}
+
+function process_all_replies() {
+    for(const [to, msgid] of replies) {
+        process_reply(to, msgid);
+    }
+    replies.length = 0;
 }
 
 function create_thread(thread: Thread, child_of: HTMLDivElement) {
@@ -150,7 +186,11 @@ function create_thread(thread: Thread, child_of: HTMLDivElement) {
     processMessageContent(contentDiv, thread);
     const subjectBar = (clone.querySelector<HTMLDivElement>(".subjectbar-thread"))!;
     subjectBar.innerText = (thread.subject ?? "") + " #"+thread.id;
-    subjectBar.id = thread.id+"";
+    if (thread.sticky) {
+        subjectBar.innerText += ' 📌'
+    }
+    const parentDiv = clone.querySelector<HTMLDivElement>('.thread')!;
+    parentDiv.id = thread.id+"";
     (clone.querySelector<HTMLSpanElement>(".country"))!.innerText = flag(thread.country) ?? "?";
     (clone.querySelector<HTMLButtonElement>(".replybutton"))!.addEventListener("click", setup_message_send.bind(null, thread.id, ">>"+thread.id+"\n"));
     if (thread.image_id !== null) {
@@ -233,6 +273,7 @@ async function loadPage(page: number) {
         threadElements.replaceChildren();
         r.forEach(t => create_thread(t, threadElements))
     });
+    process_all_replies();
 }
 
 async function loadPageCount() {

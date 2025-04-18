@@ -67,6 +67,17 @@ class DB:
                 )
                 '''
             )
+            cursor: aiosqlite.Cursor = await db.cursor()
+            await cursor.execute(
+                '''
+                select count(*) from pragma_table_info('post') where name='sticky'
+                '''
+            )
+            if (await cursor.fetchone())[0] == 0:
+                await cursor.execute('''
+                    alter table post add column sticky boolean not null default false
+                ''')
+
             await db.commit()
 
     async def get_threads_frontpage(self, page: int):
@@ -80,10 +91,21 @@ class DB:
                     select max(pl.submission_date) from post pl 
                     where pl.parent = p1.id), 
                     p1.submission_date
-                ) as last_post_date, p1.source_ip, p1.image_id
+                ) as last_post_date, p1.source_ip, p1.image_id, p1.sticky
+            from post p1
+            where p1.parent is null and p1.sticky = true
+            union
+            select
+                p1.id, p1.subject, p1.content,
+                p1.submission_date,
+                coalesce((
+                    select max(pl.submission_date) from post pl 
+                    where pl.parent = p1.id), 
+                    p1.submission_date
+                ) as last_post_date, p1.source_ip, p1.image_id, p1.sticky
             from post p1
             where p1.parent is null
-            order by last_post_date desc
+            order by sticky desc, last_post_date desc
             limit 10 offset ?
             ''', (page * 10,))
             for thread in list(await cursor.fetchall()):
@@ -104,6 +126,7 @@ class DB:
                     'poster_id': get_poster_id(poster_ip, thread_id),
                     'country': get_country(poster_ip),
                     'image_id': thread[6],
+                    'sticky': bool(thread[7]),
                     'children': [
                         {
                             'id': msg[0],

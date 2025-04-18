@@ -55,21 +55,24 @@
 </div>
 
 <template id="template:thread">
-    <div class="subjectbar-thread"></div>
-    <div class="infobar-thread">
-        Fulanito <span class="country"></span> (ID: <span class="posterid"></span>) — <span
-            class="datetime"></span>
-        <button class="replybutton">Responder</button>
-    </div>
-    <div class="clearfix">
-        <img alt="" src="" class="image"/>
-        <div class="floatleft">
-            <div class="content"></div>
-            <hr class="half-width"/>
-            <div class="children"></div>
+    <div class="thread">
+        <div class="subjectbar-thread"></div>
+        <div class="infobar-thread">
+            Fulanito <span class="country"></span> (ID: <span class="posterid"></span>) — <span
+                class="datetime"></span>
+            <button class="replybutton">Responder</button>
+            <div class="replylist"></div>
         </div>
+        <div class="clearfix">
+            <img alt="" src="" class="image"/>
+            <div class="floatleft">
+                <div class="content"></div>
+                <hr class="half-width"/>
+                <div class="children"></div>
+            </div>
+        </div>
+        <hr/>
     </div>
-    <hr/>
 </template>
 
 <template id="template:message">
@@ -80,6 +83,7 @@
             Fulanito <span class="country"></span> (ID: <span class="posterid"></span>) — <span
                 class="datetime"></span>
             <button class="replybutton">Responder</button>
+            <div class="replylist"></div>
         </div>
     <div class="clearfix">
         <img alt="" src="" class="image"/>
